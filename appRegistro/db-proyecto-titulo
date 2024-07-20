@@ -1,0 +1,793 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 16.2 (Debian 16.2-1.pgdg120+2)
+-- Dumped by pg_dump version 16.2
+
+-- Started on 2024-07-08 21:27:33
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 5 (class 2615 OID 2200)
+-- Name: public; Type: SCHEMA; Schema: -; Owner: admin
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO admin;
+
+--
+-- TOC entry 240 (class 1255 OID 16659)
+-- Name: p_reg_obs(integer, character varying, timestamp without time zone, timestamp without time zone, integer, character varying, character varying); Type: PROCEDURE; Schema: public; Owner: admin
+--
+
+CREATE PROCEDURE public.p_reg_obs(IN p_emp_id integer, IN p_esp_id character varying, IN p_hora_inicio timestamp without time zone, IN p_hora_fin timestamp without time zone, IN p_tipo integer, IN p_observacion character varying, IN p_enlace character varying DEFAULT NULL::character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_id_registro integer;
+BEGIN
+	
+        -- Insertar el registro y obtener el ID generado
+        INSERT INTO REGISTRO (id_registro, empleado_id_emp, espacio_id_esp, fecha_entrada, fecha_salida) 
+		VALUES (default,p_emp_id,p_esp_id,p_hora_inicio,p_hora_fin)
+        RETURNING id_registro INTO v_id_registro;
+
+        -- Si se proporciona una observación, insertar en la tabla observacion
+        IF p_tipo IS NOT NULL THEN
+            INSERT INTO observacion (obv_id, tipo_observacion,descripcion,enlace)
+            VALUES (v_id_registro, p_tipo,p_observacion,p_enlace);
+        END IF;
+	
+    EXCEPTION
+        -- Manejar errores
+        WHEN OTHERS THEN
+            RAISE;
+    
+END $$;
+
+
+ALTER PROCEDURE public.p_reg_obs(IN p_emp_id integer, IN p_esp_id character varying, IN p_hora_inicio timestamp without time zone, IN p_hora_fin timestamp without time zone, IN p_tipo integer, IN p_observacion character varying, IN p_enlace character varying) OWNER TO admin;
+
+--
+-- TOC entry 228 (class 1255 OID 16501)
+-- Name: tipo_empleado_tipo_empleado_id_function(); Type: FUNCTION; Schema: public; Owner: admin
+--
+
+CREATE FUNCTION public.tipo_empleado_tipo_empleado_id_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.tipo_empleado_id IS NULL THEN
+        NEW.tipo_empleado_id := nextval('tipo_empleado_tipo_empleado_id');
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.tipo_empleado_tipo_empleado_id_function() OWNER TO admin;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 216 (class 1259 OID 16412)
+-- Name: empleado; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.empleado (
+    id_emp integer NOT NULL,
+    rut character varying(12) NOT NULL,
+    nombre character varying(100) NOT NULL,
+    apellido_p character varying(100) NOT NULL,
+    apellido_m character varying(100) NOT NULL,
+    contra_emp character varying(12) NOT NULL,
+    tipo_empleado_tipo_empleado_id integer NOT NULL
+);
+
+
+ALTER TABLE public.empleado OWNER TO admin;
+
+--
+-- TOC entry 3422 (class 0 OID 0)
+-- Dependencies: 216
+-- Name: COLUMN empleado.id_emp; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.empleado.id_emp IS 'id de empleado';
+
+
+--
+-- TOC entry 3423 (class 0 OID 0)
+-- Dependencies: 216
+-- Name: COLUMN empleado.apellido_p; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.empleado.apellido_p IS 'apellido paterno';
+
+
+--
+-- TOC entry 3424 (class 0 OID 0)
+-- Dependencies: 216
+-- Name: COLUMN empleado.apellido_m; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.empleado.apellido_m IS 'apellido materno';
+
+
+--
+-- TOC entry 3425 (class 0 OID 0)
+-- Dependencies: 216
+-- Name: COLUMN empleado.contra_emp; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.empleado.contra_emp IS 'contraseña de empleado';
+
+
+--
+-- TOC entry 215 (class 1259 OID 16411)
+-- Name: empleado_id_emp_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.empleado_id_emp_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.empleado_id_emp_seq OWNER TO admin;
+
+--
+-- TOC entry 3426 (class 0 OID 0)
+-- Dependencies: 215
+-- Name: empleado_id_emp_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: admin
+--
+
+ALTER SEQUENCE public.empleado_id_emp_seq OWNED BY public.empleado.id_emp;
+
+
+--
+-- TOC entry 226 (class 1259 OID 16609)
+-- Name: empleado_id_emp_seq1; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+ALTER TABLE public.empleado ALTER COLUMN id_emp ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.empleado_id_emp_seq1
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 217 (class 1259 OID 16422)
+-- Name: espacio; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.espacio (
+    nom_esp character varying(100) NOT NULL,
+    id_esp character varying(100) NOT NULL
+);
+
+
+ALTER TABLE public.espacio OWNER TO admin;
+
+--
+-- TOC entry 3427 (class 0 OID 0)
+-- Dependencies: 217
+-- Name: COLUMN espacio.nom_esp; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.espacio.nom_esp IS 'nombre equipamiento';
+
+
+--
+-- TOC entry 3428 (class 0 OID 0)
+-- Dependencies: 217
+-- Name: COLUMN espacio.id_esp; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.espacio.id_esp IS 'id del espacio';
+
+
+--
+-- TOC entry 223 (class 1259 OID 16550)
+-- Name: horario; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.horario (
+    id integer NOT NULL,
+    id_esp character varying(255) NOT NULL,
+    nom_esp character varying(255) NOT NULL,
+    hora_entrada time without time zone NOT NULL,
+    hora_salida time without time zone NOT NULL,
+    dia character varying(20) NOT NULL
+);
+
+
+ALTER TABLE public.horario OWNER TO admin;
+
+--
+-- TOC entry 222 (class 1259 OID 16549)
+-- Name: espacios_id_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.espacios_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.espacios_id_seq OWNER TO admin;
+
+--
+-- TOC entry 3429 (class 0 OID 0)
+-- Dependencies: 222
+-- Name: espacios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: admin
+--
+
+ALTER SEQUENCE public.espacios_id_seq OWNED BY public.horario.id;
+
+
+--
+-- TOC entry 218 (class 1259 OID 16433)
+-- Name: observacion; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.observacion (
+    obv_id integer NOT NULL,
+    descripcion character varying(250),
+    enlace character varying,
+    id_registro integer,
+    tipo_observacion character varying(50)
+);
+
+
+ALTER TABLE public.observacion OWNER TO admin;
+
+--
+-- TOC entry 3430 (class 0 OID 0)
+-- Dependencies: 218
+-- Name: COLUMN observacion.enlace; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.observacion.enlace IS 'enlace de las fotos sobre las incidencias';
+
+
+--
+-- TOC entry 227 (class 1259 OID 16626)
+-- Name: observacion_obv_id_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.observacion_obv_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.observacion_obv_id_seq OWNER TO admin;
+
+--
+-- TOC entry 3431 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: observacion_obv_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: admin
+--
+
+ALTER SEQUENCE public.observacion_obv_id_seq OWNED BY public.observacion.obv_id;
+
+
+--
+-- TOC entry 225 (class 1259 OID 16590)
+-- Name: registro; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.registro (
+    id_registro integer NOT NULL,
+    empleado_id_emp integer,
+    espacio_id_esp character varying(100),
+    fecha_entrada timestamp without time zone,
+    fecha_salida timestamp without time zone
+);
+
+
+ALTER TABLE public.registro OWNER TO admin;
+
+--
+-- TOC entry 3432 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: COLUMN registro.id_registro; Type: COMMENT; Schema: public; Owner: admin
+--
+
+COMMENT ON COLUMN public.registro.id_registro IS 'id_registro';
+
+
+--
+-- TOC entry 224 (class 1259 OID 16589)
+-- Name: registro_id_registro_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+ALTER TABLE public.registro ALTER COLUMN id_registro ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.registro_id_registro_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 220 (class 1259 OID 16445)
+-- Name: tipo_empleado; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.tipo_empleado (
+    rol_emp character varying(50) NOT NULL,
+    tipo_empleado_id integer NOT NULL
+);
+
+
+ALTER TABLE public.tipo_empleado OWNER TO admin;
+
+--
+-- TOC entry 221 (class 1259 OID 16500)
+-- Name: tipo_empleado_tipo_empleado_id; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.tipo_empleado_tipo_empleado_id
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipo_empleado_tipo_empleado_id OWNER TO admin;
+
+--
+-- TOC entry 219 (class 1259 OID 16444)
+-- Name: tipo_empleado_tipo_empleado_id_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.tipo_empleado_tipo_empleado_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipo_empleado_tipo_empleado_id_seq OWNER TO admin;
+
+--
+-- TOC entry 3433 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: tipo_empleado_tipo_empleado_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: admin
+--
+
+ALTER SEQUENCE public.tipo_empleado_tipo_empleado_id_seq OWNED BY public.tipo_empleado.tipo_empleado_id;
+
+
+--
+-- TOC entry 3236 (class 2604 OID 16553)
+-- Name: horario id; Type: DEFAULT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.horario ALTER COLUMN id SET DEFAULT nextval('public.espacios_id_seq'::regclass);
+
+
+--
+-- TOC entry 3235 (class 2604 OID 16627)
+-- Name: observacion obv_id; Type: DEFAULT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.observacion ALTER COLUMN obv_id SET DEFAULT nextval('public.observacion_obv_id_seq'::regclass);
+
+
+--
+-- TOC entry 3405 (class 0 OID 16412)
+-- Dependencies: 216
+-- Data for Name: empleado; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.empleado (id_emp, rut, nombre, apellido_p, apellido_m, contra_emp, tipo_empleado_tipo_empleado_id) FROM stdin;
+55	19503382k	Emerson	Rojas	Cisterna	emer12345678	2
+49	195825471	Pedro	Rojas	Molina	pedrorojas12	1
+1	197782277	Felipe	Torres	Gutierrez	felipe123456	2
+56	19223589k	Juan	Pablo	Ramos	juan12345678	2
+37	18570470k	Joseph	Rojas	Molina	juanrojas123	1
+\.
+
+
+--
+-- TOC entry 3406 (class 0 OID 16422)
+-- Dependencies: 217
+-- Data for Name: espacio; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.espacio (nom_esp, id_esp) FROM stdin;
+Laboratorio diseño	107
+Sala 108	108
+Sala 109	109
+Laboratorio Base de datos	102
+Taller Diseño	103
+Auditorio	104
+Laboratorio Redes	105
+Sala 106	106
+Sala 101	101
+Laboratorio Programacion 2	110
+quincho	111
+\.
+
+
+--
+-- TOC entry 3412 (class 0 OID 16550)
+-- Dependencies: 223
+-- Data for Name: horario; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.horario (id, id_esp, nom_esp, hora_entrada, hora_salida, dia) FROM stdin;
+64	101	Programacion	14:00:00	15:35:00	Lunes
+66	103	Arte	12:25:00	14:00:00	Jueves
+63	101	Programacion	08:30:00	11:00:00	Jueves
+73	107	Laboratorio diseño	00:00:00	00:00:00	Lunes
+74	105	Laboratorio Redes	00:00:00	00:00:00	Lunes
+75	107	Laboratorio diseño	00:00:00	00:00:00	Lunes
+76	109	Sala 109	00:00:00	00:00:00	Lunes
+77	107	Laboratorio diseño	00:00:00	00:00:00	Lunes
+67	102	Base de datos	09:55:00	13:00:00	Viernes
+68	103	Diseño Grafico	10:45:00	12:00:00	Viernes
+70	110	Portafolio de Titulo	13:11:00	14:55:00	Viernes
+62	103	Diseño Web	12:20:00	14:00:00	Viernes
+69	101	Algoritmos	13:30:00	15:15:00	Viernes
+65	101	Programacion Java	11:05:00	13:15:00	Viernes
+\.
+
+
+--
+-- TOC entry 3407 (class 0 OID 16433)
+-- Dependencies: 218
+-- Data for Name: observacion; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.observacion (obv_id, descripcion, enlace, id_registro, tipo_observacion) FROM stdin;
+21	notebook perdido	\N	107	Objeto perdido
+22	notebook perdido	https://pruebacargaimagenes.onrender.com:/uploads/1719420731132-foto.jpg	108	Objeto perdido
+23	teclado perdido	https://pruebacargaimagenes.onrender.com:/uploads/1719422577230-foto.jpg	110	Objeto perdido
+1	pepe	\N	110	prueba1
+2	pepe	\N	110	prueba2
+3	pepe	\N	107	prueba2
+4	pepe	\N	108	prueba2
+26	accidente de personal		112	Incidencia
+27	teclado perdido 	https://pruebacargaimagenes.onrender.com:/uploads/1720061428728-foto.jpg	112	Objeto perdido
+28	audífonos perdidos	https://pruebacargaimagenes.onrender.com:/uploads/1720061503971-foto.jpg	113	Objeto perdido
+29	mesa en mal estado 	https://pruebacargaimagenes.onrender.com:/uploads/1720061575426-foto.jpg	115	Incidencia
+30	accidente laboral	\N	117	Incidencia
+31	mouse perdido	https://pruebacargaimagenes.onrender.com:/uploads/1720143495486-foto.jpg	117	Objeto perdido
+32	accidente	\N	119	Incidencia
+33	pc perdido 	https://pruebacargaimagenes.onrender.com:/uploads/1720196575947-foto.jpg	119	Objeto perdido
+\.
+
+
+--
+-- TOC entry 3414 (class 0 OID 16590)
+-- Dependencies: 225
+-- Data for Name: registro; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.registro (id_registro, empleado_id_emp, espacio_id_esp, fecha_entrada, fecha_salida) FROM stdin;
+103	55	101	2024-06-20 20:41:00	2024-06-20 20:41:00
+104	55	102	2024-06-20 21:06:00	2024-06-20 21:06:00
+105	55	110	2024-06-26 11:32:00	2024-06-26 11:32:00
+106	55	110	2024-06-26 11:33:00	2024-06-26 11:33:00
+107	55	102	2024-06-26 12:44:00	2024-06-26 12:45:00
+108	55	102	2024-06-26 12:51:00	2024-06-26 12:52:00
+109	1	102	2024-06-26 13:20:00	2024-06-26 13:20:00
+110	1	104	2024-06-26 13:21:00	2024-06-26 13:23:00
+1	55	101	2024-08-20 20:41:00	2024-08-20 20:43:00
+2	55	101	2024-08-20 20:41:00	2024-08-20 20:46:00
+3	1	101	2024-06-20 20:41:00	2024-06-20 21:41:00
+4	1	101	2024-06-20 20:41:00	2024-06-20 21:41:00
+5	1	101	2024-06-20 20:41:00	2024-06-20 20:59:00
+6	37	104	2024-05-20 14:30:00	2024-05-20 14:40:00
+7	49	106	2024-07-03 10:40:00	2024-07-03 10:59:00
+8	49	107	2024-07-03 12:40:00	2024-07-03 12:59:00
+111	49	105	2024-07-03 22:43:00	2024-07-03 22:48:00
+112	49	105	2024-07-03 22:49:00	2024-07-03 22:50:00
+113	49	108	2024-07-03 22:50:00	2024-07-03 22:51:00
+114	49	106	2024-07-03 22:52:00	2024-07-03 22:52:00
+115	49	103	2024-07-03 22:52:00	2024-07-03 22:53:00
+116	55	103	2024-07-04 21:36:00	2024-07-04 21:36:00
+117	55	103	2024-07-04 21:37:00	2024-07-04 21:38:00
+118	1	109	2024-07-05 12:20:00	2024-07-05 12:21:00
+119	1	107	2024-07-05 12:21:00	2024-07-05 12:23:00
+\.
+
+
+--
+-- TOC entry 3409 (class 0 OID 16445)
+-- Dependencies: 220
+-- Data for Name: tipo_empleado; Type: TABLE DATA; Schema: public; Owner: admin
+--
+
+COPY public.tipo_empleado (rol_emp, tipo_empleado_id) FROM stdin;
+EMPLEADO	2
+ADMINISTRADOR	1
+\.
+
+
+--
+-- TOC entry 3434 (class 0 OID 0)
+-- Dependencies: 215
+-- Name: empleado_id_emp_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.empleado_id_emp_seq', 61, true);
+
+
+--
+-- TOC entry 3435 (class 0 OID 0)
+-- Dependencies: 226
+-- Name: empleado_id_emp_seq1; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.empleado_id_emp_seq1', 56, true);
+
+
+--
+-- TOC entry 3436 (class 0 OID 0)
+-- Dependencies: 222
+-- Name: espacios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.espacios_id_seq', 77, true);
+
+
+--
+-- TOC entry 3437 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: observacion_obv_id_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.observacion_obv_id_seq', 33, true);
+
+
+--
+-- TOC entry 3438 (class 0 OID 0)
+-- Dependencies: 224
+-- Name: registro_id_registro_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.registro_id_registro_seq', 119, true);
+
+
+--
+-- TOC entry 3439 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: tipo_empleado_tipo_empleado_id; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.tipo_empleado_tipo_empleado_id', 9, true);
+
+
+--
+-- TOC entry 3440 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: tipo_empleado_tipo_empleado_id_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.tipo_empleado_tipo_empleado_id_seq', 1, false);
+
+
+--
+-- TOC entry 3238 (class 2606 OID 16417)
+-- Name: empleado empleado_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.empleado
+    ADD CONSTRAINT empleado_pkey PRIMARY KEY (id_emp);
+
+
+--
+-- TOC entry 3249 (class 2606 OID 16557)
+-- Name: horario espacios_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.horario
+    ADD CONSTRAINT espacios_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3243 (class 2606 OID 16565)
+-- Name: espacio id_esp; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.espacio
+    ADD CONSTRAINT id_esp PRIMARY KEY (id_esp) INCLUDE (id_esp);
+
+
+--
+-- TOC entry 3245 (class 2606 OID 16629)
+-- Name: observacion observacion_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.observacion
+    ADD CONSTRAINT observacion_pkey PRIMARY KEY (obv_id);
+
+
+--
+-- TOC entry 3254 (class 2606 OID 16594)
+-- Name: registro registro_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.registro
+    ADD CONSTRAINT registro_pkey PRIMARY KEY (id_registro);
+
+
+--
+-- TOC entry 3241 (class 2606 OID 16517)
+-- Name: empleado rut_unique; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.empleado
+    ADD CONSTRAINT rut_unique UNIQUE (rut);
+
+
+--
+-- TOC entry 3247 (class 2606 OID 16450)
+-- Name: tipo_empleado tipo_empleado_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.tipo_empleado
+    ADD CONSTRAINT tipo_empleado_pkey PRIMARY KEY (tipo_empleado_id);
+
+
+--
+-- TOC entry 3251 (class 1259 OID 16600)
+-- Name: fki_id_emp; Type: INDEX; Schema: public; Owner: admin
+--
+
+CREATE INDEX fki_id_emp ON public.registro USING btree (empleado_id_emp);
+
+
+--
+-- TOC entry 3252 (class 1259 OID 16620)
+-- Name: fki_id_esp; Type: INDEX; Schema: public; Owner: admin
+--
+
+CREATE INDEX fki_id_esp ON public.registro USING btree (espacio_id_esp);
+
+
+--
+-- TOC entry 3250 (class 1259 OID 16571)
+-- Name: fki_id_espacio; Type: INDEX; Schema: public; Owner: admin
+--
+
+CREATE INDEX fki_id_espacio ON public.horario USING btree (id_esp);
+
+
+--
+-- TOC entry 3239 (class 1259 OID 16606)
+-- Name: fki_id_tipo_emp; Type: INDEX; Schema: public; Owner: admin
+--
+
+CREATE INDEX fki_id_tipo_emp ON public.empleado USING btree (tipo_empleado_tipo_empleado_id);
+
+
+--
+-- TOC entry 3260 (class 2620 OID 16502)
+-- Name: tipo_empleado tipo_empleado_tipo_empleado_id_trigger; Type: TRIGGER; Schema: public; Owner: admin
+--
+
+CREATE TRIGGER tipo_empleado_tipo_empleado_id_trigger BEFORE INSERT ON public.tipo_empleado FOR EACH ROW EXECUTE FUNCTION public.tipo_empleado_tipo_empleado_id_function();
+
+
+--
+-- TOC entry 3256 (class 2606 OID 16675)
+-- Name: observacion fk_obv_reg_id; Type: FK CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.observacion
+    ADD CONSTRAINT fk_obv_reg_id FOREIGN KEY (id_registro) REFERENCES public.registro(id_registro) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3258 (class 2606 OID 16595)
+-- Name: registro id_emp; Type: FK CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.registro
+    ADD CONSTRAINT id_emp FOREIGN KEY (empleado_id_emp) REFERENCES public.empleado(id_emp) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3259 (class 2606 OID 16615)
+-- Name: registro id_esp; Type: FK CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.registro
+    ADD CONSTRAINT id_esp FOREIGN KEY (espacio_id_esp) REFERENCES public.espacio(id_esp) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3257 (class 2606 OID 16621)
+-- Name: horario id_esp; Type: FK CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.horario
+    ADD CONSTRAINT id_esp FOREIGN KEY (id_esp) REFERENCES public.espacio(id_esp) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3255 (class 2606 OID 16601)
+-- Name: empleado id_tipo_emp; Type: FK CONSTRAINT; Schema: public; Owner: admin
+--
+
+ALTER TABLE ONLY public.empleado
+    ADD CONSTRAINT id_tipo_emp FOREIGN KEY (tipo_empleado_tipo_empleado_id) REFERENCES public.tipo_empleado(tipo_empleado_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 2067 (class 826 OID 16391)
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON SEQUENCES TO admin;
+
+
+--
+-- TOC entry 2069 (class 826 OID 16393)
+-- Name: DEFAULT PRIVILEGES FOR TYPES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TYPES TO admin;
+
+
+--
+-- TOC entry 2068 (class 826 OID 16392)
+-- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: -; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON FUNCTIONS TO admin;
+
+
+--
+-- TOC entry 2066 (class 826 OID 16390)
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: -; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TABLES TO admin;
+
+
+-- Completed on 2024-07-08 21:27:48
+
+--
+-- PostgreSQL database dump complete
+--
+
